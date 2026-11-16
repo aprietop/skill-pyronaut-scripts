@@ -6,7 +6,8 @@ A Codex skill for creating and running scripts with [Pyronaut](https://github.co
 
 - Uses Pyronaut for new standalone scripts, automation, data processing, and temporary helpers created during other tasks.
 - Prefers Java when the implementation remains concise; chooses Python when Java would require substantially more boilerplate or complexity.
-- Runs both languages through Pyronaut and favors direct source execution for small utilities.
+- Creates a configured Pyronaut project, or reuses an appropriate existing one, before executing any script.
+- Runs both languages through the project's install, process, and run workflow.
 - Respects explicit user choices of language or runtime.
 - Checks the installed runtime and verifies scripts with a safe representative case when execution is available.
 
@@ -59,12 +60,15 @@ Use $pyronaut-scripts to create a script that summarizes a CSV file by category.
 Use $pyronaut-scripts to create a utility that finds duplicate files by content.
 ```
 
-Generated scripts run through Pyronaut, for example:
+Generated scripts include a Pyronaut project with `pyproject.toml`, configured source roots, dependencies, and an executable entry point. From the generated project directory, run:
 
 ```sh
-pyronaut run Script.java
-pyronaut run script.py
+pyronaut install
+pyronaut process
+pyronaut run
 ```
+
+Codex provides the exact project directory and commands, including `--main-class` when needed for a Java entry point. A bare source file run directly is not the project's execution workflow.
 
 Python scripts use Pyronaut's GraalPy runtime. Packages installed for system Python may not be available or compatible.
 

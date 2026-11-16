@@ -1,11 +1,11 @@
 ---
 name: pyronaut-scripts
-description: Create and run scripts with Pyronaut whenever Codex needs a new script, especially requests normally solved with Python. Applies to standalone utilities, automation, data processing, and temporary helper scripts created during another task. Prefer Java; choose Python when Java would make the implementation substantially longer or more complex.
+description: Create and run scripts in a configured Pyronaut project whenever Codex needs a new script, especially requests normally solved with Python. Applies to standalone utilities, automation, data processing, and temporary helper scripts created during another task. Prefer Java; choose Python when Java would make the implementation substantially longer or more complex.
 ---
 
 # Pyronaut Scripts
 
-Use Pyronaut for newly created scripts, including temporary helpers needed to complete another task. Prefer Java source; use Python source when it keeps the implementation substantially shorter and clearer. An explicit user choice of language or runtime takes precedence.
+Use Pyronaut for newly created scripts, including temporary helpers needed to complete another task. Create a configured Pyronaut project before executing the script, or reuse an appropriate existing Pyronaut project. Prefer Java source; use Python source when it keeps the implementation substantially shorter and clearer. An explicit user choice of language or runtime takes precedence.
 
 ## Choose the language
 
@@ -22,16 +22,29 @@ Pyronaut executes Python on GraalPy with JVM integration. Verify required Python
 
 If Pyronaut is missing or cannot launch, report the concrete blocker and keep the script ready for Pyronaut; do not silently substitute another runtime. Changes to a user's global installation are separate from writing the script.
 
-## Write and run the smallest suitable script
+## Create or reuse a Pyronaut project
 
-For a standalone task, prefer direct source execution over scaffolding an application or HTTP server:
+Every script needs a Pyronaut project with a `pyproject.toml` containing its Pyronaut configuration. A bare `.java` or `.py` file is not a complete deliverable. Do not use direct source execution as a substitute for project creation.
+
+1. Inspect the destination for an existing Pyronaut project. Reuse it when appropriate; an unrelated `pyproject.toml` alone does not make a directory a Pyronaut project.
+2. Otherwise create a dedicated project directory. Use `pyronaut create <project-name>` when its generated project is suitable. Check `pyronaut create --help` first: the installed generator may create a Python application even when Java is preferred. Adapt the generated project for the chosen language, or construct a minimal project from a working local Pyronaut example and the installed configuration schema. Do not invent Java generation flags.
+3. Configure the source roots for the chosen language, resources if needed, toolchain, compatible core/platform versions, dependencies, and executable entry point. Keep application logic suitable for a command-line utility; a script does not require an HTTP server. Declare only dependencies the task needs. Preserve an existing project's conventions and never overwrite unrelated configuration.
+4. Put source files in the configured roots and ensure the selected entry point runs the script's work and exits. For Java, use a class with `public static void main(String[] args)`; for Python, use the entry-point conventions supported by the installed Pyronaut project. Resolve unfamiliar entry-point settings from installed tools or working examples.
+5. Install dependencies and process the project before running it. From the project directory, use the supported project workflow:
 
 ```sh
-pyronaut run Script.java
-pyronaut run script.py
+pyronaut install
+pyronaut process
+pyronaut run
 ```
 
-A minimal Java starting point is:
+For Java, `pyronaut run --main-class=<fully-qualified-class-name>` can select the script's entry point when needed; verify support in `pyronaut run --help`. Determine application-argument forwarding from installed help or working examples rather than inventing syntax.
+
+For temporary helpers, put the complete project in a disposable task directory. For a deliverable, keep the project configuration alongside the sources so others can reproduce execution. Reuse the configured project for related helpers instead of generating a project for each file.
+
+## Write the script inside the project
+
+A minimal Java main class is:
 
 ```java
 public class Script {
@@ -47,9 +60,7 @@ A minimal Python starting point is:
 print("Hello from Pyronaut")
 ```
 
-Use a Java filename matching the public class. Add only the imports, argument handling, and dependencies the actual task needs. Use Python modules or multiple Java files when the task warrants them; Pyronaut accepts source directories as well as individual files.
-
-For dependencies or a larger existing Pyronaut project, inspect its `pyproject.toml` and reuse its source layout and dependency configuration. CLI help exposes `--setup=<pyproject.toml>` for staging configuration during direct source execution. Determine dependency coordinates, versions, entry points, and application-argument forwarding from the installed tools or working project examples; do not invent option syntax. Never replace an unrelated project's configuration just to run a helper.
+Use a Java filename matching the public class and place it under the configured Java source root. Place Python code under the configured Python source root. Add only the imports, argument handling, and dependencies the actual task needs. Use modules or multiple files when the task warrants them.
 
 ## Verify and deliver
 
@@ -57,4 +68,4 @@ Run a safe representative case through Pyronaut and check the result relevant to
 
 If startup fails before the script executes, distinguish that runtime failure from a script failure. For example, a missing native launcher may trigger a download; HTTP 403 while fetching that launcher does not establish that the source code is invalid. The launcher may suggest `[tool.pyronaut.toolchain] type = "jvm"`; verify that this works with the installed runtime before recommending it, and keep configuration changes local to the task. Do not repeatedly retry an unchanged download failure.
 
-Provide the script and exact Pyronaut command. Briefly explain the Python choice when it materially reduces length, and state any validation that remains blocked.
+Provide the project directory, source files, `pyproject.toml`, and exact commands to install, process, and run the project. State the working directory for those commands. Briefly explain the Python choice when it materially reduces length, and state any validation that remains blocked.
