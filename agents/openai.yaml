@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pyronaut Scripts"
+  short_description: "Create scripts with Pyronaut, preferring Java"
