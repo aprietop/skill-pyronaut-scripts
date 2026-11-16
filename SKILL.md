@@ -1,71 +1,63 @@
 ---
 name: pyronaut-scripts
-description: Create and run scripts in a configured Pyronaut project whenever Codex needs a new script, especially requests normally solved with Python. Applies to standalone utilities, automation, data processing, and temporary helper scripts created during another task. Prefer Java; choose Python when Java would make the implementation substantially longer or more complex.
+description: Create and run scripts in configured Pyronaut projects, including standalone utilities, automation, data processing, and temporary helpers. Prefer Java; choose Python when it substantially simplifies the complete solution.
 ---
 
 # Pyronaut Scripts
 
-Use Pyronaut for newly created scripts, including temporary helpers needed to complete another task. Create a configured Pyronaut project before executing the script, or reuse an appropriate existing Pyronaut project. Prefer Java source; use Python source when it keeps the implementation substantially shorter and clearer. An explicit user choice of language or runtime takes precedence.
+Use Pyronaut for newly authored scripts. Create a configured Pyronaut project or reuse an appropriate existing project, and verify that its application entry point performs the requested work and exits. Prefer Java when the complete solution is concise; choose Python when equivalent Java needs substantially more parsing, data manipulation, or support code. An explicit user language or runtime choice takes precedence.
 
-## Choose the language
+Ordinary shell commands and existing tools remain commands; do not wrap file reads, searches, or existing application workflows in new scripts.
 
-- Start with Java when its standard library or available JVM dependencies provide a concise solution.
-- Choose Python when equivalent Java would require substantially more boilerplate, parsing, data manipulation, or support code. Judge the complete solution, including dependency setup, rather than applying a fixed line-count threshold.
-- Run either language through Pyronaut. Choosing Python does not mean switching to CPython, `python`, `uv run`, or a virtual environment.
-- Keep ordinary shell commands as commands; this skill does not require wrapping file reads, searches, or existing tool invocations in a new script. It applies when authoring a script, including an inline helper. Preserve existing application code, scripts, and build workflows unless the task calls for changing them.
+## Understand the runtime before choosing an entry point
 
-## Check the installed runtime
+Check `command -v pyronaut`, `pyronaut --version`, and `pyronaut run --help`. Use the installed implementation, generated schemas, and [official documentation](https://pyronaut.io/docs/) to resolve unfamiliar behavior. Help describes intended options; a successful representative execution establishes that the installed delegated launcher actually supports them.
 
-Use `command -v pyronaut`, `pyronaut --version`, and `pyronaut run --help` to confirm availability and supported options. Consult local CLI help, installed implementation, or project configuration for unfamiliar features rather than assuming CPython, Java source-launcher, or Maven behavior.
+Pyronaut is a Micronaut application platform with source processing, dependency injection, and GraalPy integration. It is not equivalent to the Java source launcher or CPython. Processing a class containing `public static void main(String[] args)` does not imply that `pyronaut run` invokes it. Likewise, a Python file is not automatically a standalone script entry point just because its sources process successfully.
 
-Pyronaut executes Python on GraalPy with JVM integration. Verify required Python packages and native extensions are compatible before choosing them. Do not assume packages installed for system Python are available to Pyronaut.
+For a Java command-line utility, use a supported Micronaut startup bean when the project runner boots an application context. The bean performs the work and explicitly exits. Named application arguments can be read as configuration properties. For a tested Java pattern and version-specific argument forwarding, read [references/java-cli.md](references/java-cli.md).
 
-If Pyronaut is missing or cannot launch, report the concrete blocker and keep the script ready for Pyronaut; do not silently substitute another runtime. Changes to a user's global installation are separate from writing the script.
+Use an arbitrary main-class override only after verifying that the installed runner accepts it. Pyronaut 0.1.2 installations can advertise `run --main-class` in orchestrator help while the delegated runner rejects it. Do not repeatedly retry that option or switch to wheel packaging merely to run a local utility.
 
-## Create or reuse a Pyronaut project
+Python runs on embedded GraalPy with JVM integration. Verify required packages and native extensions against that runtime; system CPython packages are not evidence that those packages are available to Pyronaut. Keep Python execution inside the supported Pyronaut workflow.
 
-Every script needs a Pyronaut project with a `pyproject.toml` containing its Pyronaut configuration. A bare `.java` or `.py` file is not a complete deliverable. Do not use direct source execution as a substitute for project creation.
+## Configure the project
 
-1. Inspect the destination for an existing Pyronaut project. Reuse it when appropriate; an unrelated `pyproject.toml` alone does not make a directory a Pyronaut project.
-2. Otherwise create a dedicated project directory. Use `pyronaut create <project-name>` when its generated project is suitable. Check `pyronaut create --help` first: the installed generator may create a Python application even when Java is preferred. Adapt the generated project for the chosen language, or construct a minimal project from a working local Pyronaut example and the installed configuration schema. Do not invent Java generation flags.
-3. Configure the source roots for the chosen language, resources if needed, toolchain, compatible core/platform versions, dependencies, and executable entry point. Keep application logic suitable for a command-line utility; a script does not require an HTTP server. Declare only dependencies the task needs. Preserve an existing project's conventions and never overwrite unrelated configuration.
-4. Put source files in the configured roots and ensure the selected entry point runs the script's work and exits. For Java, use a class with `public static void main(String[] args)`; for Python, use the entry-point conventions supported by the installed Pyronaut project. Resolve unfamiliar entry-point settings from installed tools or working examples.
-5. Install dependencies and process the project before running it. From the project directory, use the supported project workflow:
+Inspect the destination before writing. Preserve unrelated applications and configuration. A standalone deliverable needs its source and `pyproject.toml` together; temporary helpers belong in a disposable task project.
+
+Check `pyronaut create --help` before using the generator; it may generate a Python HTTP application. For a small Java utility, construct a minimal project from a working local example and the installed configuration schema rather than adding an unnecessary HTTP server.
+
+Configure:
+
+- Project name and version, repositories, and compatible core/platform versions from the installed runtime or a working project.
+- JVM toolchain when using the JVM launcher, and only the dependencies the task needs.
+- Explicit source roots for mixed-language or nested workspaces. Ensure explicitly configured source directories exist. Avoid letting the default Python root accidentally include unrelated Java sources or neighboring applications.
+- A runnable startup path appropriate to the chosen language. Ordinary static Java main methods may remain reusable logic, but need a supported application entry point.
+
+Generated schemas and dependency manifests are build state, not handwritten application code. Use the generated-directory name actually produced by the installed version.
+
+## Install, process, and execute
+
+Run from the project directory:
 
 ```sh
 pyronaut install
 pyronaut process
-pyronaut run
+pyronaut run --project-dir=. -- <application-arguments>
 ```
 
-For Java, `pyronaut run --main-class=<fully-qualified-class-name>` can select the script's entry point when needed; verify support in `pyronaut run --help`. Determine application-argument forwarding from installed help or working examples rather than inventing syntax.
+Verify argument forwarding with the installed CLI. In the tested 0.1.2 implementation, an initial `--` followed by arguments can be classified as direct-source mode. An explicit `--project-dir=.` before the separator selects project execution. See the Java reference for a concrete working invocation.
 
-For temporary helpers, put the complete project in a disposable task directory. For a deliverable, keep the project configuration alongside the sources so others can reproduce execution. Reuse the configured project for related helpers instead of generating a project for each file.
+Use `run` for a finite utility; `dev` starts a watcher. Disable the banner when useful for command-line output. Ensure success and error paths terminate with appropriate exit codes. Do not scaffold an HTTP route solely to execute a calculation.
 
-## Write the script inside the project
+## Diagnose and verify
 
-A minimal Java main class is:
+Run a representative case through Pyronaut, check the actual result and exit code, and exercise relevant input failures. A trivial helper needs no separate test suite. For state-changing scripts, use a non-mutating path or disposable fixture unless the real action is authorized.
 
-```java
-public class Script {
-    public static void main(String[] args) throws Exception {
-        System.out.println("Hello from Pyronaut");
-    }
-}
-```
+Distinguish installation, dependency resolution, processing, launcher initialization, and application failures. A source that processes successfully is not yet a verified executable utility.
 
-A minimal Python starting point is:
+For runtime problems, consult `pyronaut doctor` and the failing delegated tool. A sandbox denial on a Maven or Pyronaut cache lock is an access issue, not an unresolved dependency. Use the normal approval mechanism for required cache access.
 
-```python
-print("Hello from Pyronaut")
-```
+If native-launcher provisioning fails, do not repeatedly retry an unchanged download. A local `[tool.pyronaut.toolchain] type = "jvm"` can select the JVM workflow, but verify it with the actual project command. Keep configuration changes local. Global runtime upgrades, repairs, or package installation are separate from writing the script; do not silently modify the user's installation or substitute another runtime.
 
-Use a Java filename matching the public class and place it under the configured Java source root. Place Python code under the configured Python source root. Add only the imports, argument handling, and dependencies the actual task needs. Use modules or multiple files when the task warrants them.
-
-## Verify and deliver
-
-Run a safe representative case through Pyronaut and check the result relevant to the task. For scripts that change external state, use a non-mutating path or a disposable fixture unless the real action is already authorized. A separate test suite is unnecessary for a trivial helper when its behavior can be checked directly.
-
-If startup fails before the script executes, distinguish that runtime failure from a script failure. For example, a missing native launcher may trigger a download; HTTP 403 while fetching that launcher does not establish that the source code is invalid. The launcher may suggest `[tool.pyronaut.toolchain] type = "jvm"`; verify that this works with the installed runtime before recommending it, and keep configuration changes local to the task. Do not repeatedly retry an unchanged download failure.
-
-Provide the project directory, source files, `pyproject.toml`, and exact commands to install, process, and run the project. State the working directory for those commands. Briefly explain the Python choice when it materially reduces length, and state any validation that remains blocked.
+Deliver the project directory, source/configuration links, exact install/process/run commands with their working directory, and observed results. Clearly state any remaining blocker. Explain a Python choice when it materially simplifies the solution.

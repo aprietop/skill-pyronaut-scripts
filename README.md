@@ -65,10 +65,18 @@ Generated scripts include a Pyronaut project with `pyproject.toml`, configured s
 ```sh
 pyronaut install
 pyronaut process
-pyronaut run
+pyronaut run --project-dir=. -- <application-arguments>
 ```
 
-Codex provides the exact project directory and commands, including `--main-class` when needed for a Java entry point. A bare source file run directly is not the project's execution workflow.
+Codex provides the exact project directory, supported startup entry point, and arguments. Pyronaut starts a Micronaut application context; processing a Java `main` method alone does not make it the application entry point. On the tested Pyronaut 0.1.2 installation, the delegated runner rejects `--main-class` even though the CLI help lists it.
+
+The [Java CLI reference](references/java-cli.md) includes a verified startup-listener example using named arguments:
+
+```sh
+pyronaut run --project-dir=. -- --left=5 --right=7
+```
+
+This prints `12` after startup output and exits. The explicit project option avoids this version's direct-source routing when forwarding arguments. A bare source file run directly is not the project's execution workflow.
 
 Python scripts use Pyronaut's GraalPy runtime. Packages installed for system Python may not be available or compatible.
 
@@ -85,6 +93,7 @@ The skill installer copies files locally; those copies do not automatically trac
 ## Repository contents
 
 - [SKILL.md](SKILL.md): Skill selection description and execution instructions.
+- [references/java-cli.md](references/java-cli.md): Verified Java command-line project and version-specific launcher behavior.
 - [agents/openai.yaml](agents/openai.yaml): Codex display metadata.
 - [LICENSE](LICENSE): Apache License 2.0.
 
